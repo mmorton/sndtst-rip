@@ -18,6 +18,7 @@ import (
 	"io"
 	"strconv"
 	"html"
+	"strings"
 )
 
 type (
@@ -62,6 +63,20 @@ func main() {
 	Download(*slug, *dest)
 }
 
+func sanitize(text string) string {
+	s := text
+	s = strings.Replace(s, "<", "-", -1)
+	s = strings.Replace(s, ">", "-", -1)
+	s = strings.Replace(s, ":", "-", -1)
+	s = strings.Replace(s, "\"", "-", -1)
+	s = strings.Replace(s, "/", "-", -1)
+	s = strings.Replace(s, "\\", "-", -1)
+	s = strings.Replace(s, "|", "-", -1)
+	s = strings.Replace(s, "?", "-", -1)
+	s = strings.Replace(s, "*", "-", -1)
+	return s
+}
+
 func Download(slug string, dest string) {
 	jar, _ := cookiejar.New(nil)
 	client := &http.Client{
@@ -74,7 +89,7 @@ func Download(slug string, dest string) {
 	}
 
 	albumTitle := html.UnescapeString(album.Title)
-	albumPath := filepath.Join(dest, albumTitle)
+	albumPath := filepath.Join(dest, sanitize(albumTitle))
 	err = os.MkdirAll(albumPath, os.ModePerm)
 	if err != nil {
 		log.Fatalf("Could not make dir for album: %s, err: %#v", albumPath, err)
@@ -100,7 +115,7 @@ func Download(slug string, dest string) {
 
 			trackNumText := strconv.Itoa(album.TrackIndex[track.Guid])
 			trackTitle := html.UnescapeString(track.Title)
-			trackPath := path.Join(albumPath, fmt.Sprintf("%s - %s.mp3", trackNumText, trackTitle))
+			trackPath := path.Join(albumPath, sanitize(fmt.Sprintf("%s - %s.mp3", trackNumText, trackTitle)))
 
 			out, err := os.Create(trackPath)
 			if err != nil {
